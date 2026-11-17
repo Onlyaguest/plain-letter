@@ -1,0 +1,24 @@
+{
+  "name": "plain-letter",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Plain Letter: understand confusing letters and bills without your personal details leaving your device. Hybrid on-device + cloud AI with Firebase AI Logic.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "firebase": "^13.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tesseract.js": "^5.1.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
+  }
+}
