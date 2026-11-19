@@ -67,9 +67,18 @@ export async function downloadDeviceModel(onProgress) {
   s.destroy?.();
 }
 
+// The small on-device model sometimes leaks a closing brace into the last string value
+// ("...billing inquiries.}"). Strip stray trailing braces from every string in the result.
+function tidy(v) {
+  if (typeof v === 'string') return v.replace(/\s*\}+\s*$/, '');
+  if (Array.isArray(v)) return v.map(tidy);
+  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, tidy(x)]));
+  return v;
+}
+
 function parse(text) {
   const t = String(text || '').trim().replace(/^```(?:json)?\s*|\s*```$/g, '');
-  return JSON.parse(t);
+  return tidy(JSON.parse(t));
 }
 
 function src(res) {
