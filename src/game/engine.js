@@ -46,7 +46,7 @@ export const UPGRADES = [
   { id: 'calendar', name: 'Wall calendar', icon: '🗓️', cost: 130, perk: 'Dates arrive as deadlines' },
   { id: 'phonelist', name: 'Family phone list', icon: '☎️', cost: 180, perk: 'A fourth family request' },
   { id: 'board', name: 'Bulletin board', icon: '📌', cost: 240, perk: 'Requests pay 25% more' },
-  { id: 'chair', name: 'Comfy chair', icon: '🛋️', cost: 320, perk: 'The help desk is complete' },
+  { id: 'chair', name: 'Comfy chair', icon: '🛋️', cost: 320, perk: '+2 stamps; the help desk is complete' },
 ];
 
 export const PEOPLE = [
@@ -74,7 +74,7 @@ const BASE_STAMPS = 8;
 // ---------- helpers ----------
 const clone = (s) => JSON.parse(JSON.stringify(s));
 export const has = (s, id) => !!s.upgrades[id];
-export const stampMax = (s) => BASE_STAMPS + (has(s, 'lamp') ? 3 : 0);
+export const stampMax = (s) => BASE_STAMPS + (has(s, 'lamp') ? 3 : 0) + (has(s, 'chair') ? 2 : 0);
 const stampMs = (s) => (has(s, 'kettle') ? STAMP_MS / 2 : STAMP_MS);
 export const levelOf = (xp) => { let l = 1; for (let i = 1; i < LEVEL_XP.length; i++) if (xp >= LEVEL_XP[i]) l = i + 1; return l; };
 export const tileName = (t) => (t.c === 'exposed' ? `Exposed ${DETAIL_NAMES[t.kind] || 'detail'}` : CHAINS[t.c].names[t.n - 1]);
@@ -262,6 +262,11 @@ export function fileTile(st, cell) {
 
 /** Which board cells would fill this request (or why not). */
 export function canDeliver(s, order) {
+  if (order.cloud) {
+    // The privacy rule of the app is the rule of the game: nothing goes to the cloud while a detail is exposed.
+    if (s.board.some((t) => t && t.c === 'exposed') || s.tray.some((t) => t.c === 'exposed')) return { ok: false, picks: [], why: 'exposed' };
+    if (!letterForCloud(s)) return { ok: false, picks: [], why: 'no-letter' };
+  }
   const used = new Set();
   const picks = [];
   for (const need of order.need) {
@@ -313,7 +318,7 @@ export function refillOrders(s, rng = Math.random) {
     const busy = new Set(s.orders.map((o) => o.who));
     const free = PEOPLE.filter((p) => !busy.has(p.id) && p.id !== s.lastWho);
     const who = (free.length ? pick(free) : pick(PEOPLE)).id;
-    const cloud = lvl >= 2 && rng() < 0.4 && !s.orders.some((o) => o.cloud);
+    const cloud = lvl >= 2 && s.stats.locked > 0 && rng() < 0.4 && !s.orders.some((o) => o.cloud);
     const need = [];
     if (cloud) need.push({ c: 'privacy', n: Math.min(maxTier, 2) });
     const count = Math.max(1, Math.ceil(rng() * maxNeeds) - (cloud ? 1 : 0)) ;
@@ -357,6 +362,7 @@ export function buyUpgrade(st, id) {
   s.coins -= u.cost;
   s.upgrades[id] = true;
   if (id === 'lamp') s.stamps += 3;
+  if (id === 'chair') s.stamps += 2;
   if (id === 'phonelist') refillOrders(s);
   const lvl = gainXp(s, 3);
   return { state: s, event: { type: 'upgrade', upgrade: u, levelUp: lvl } };

@@ -46,6 +46,7 @@ export default function Desk({ deps, dev, incoming, onIncomingUsed }) {
   const writing = useRef(false);
   const down = useRef(null);
   const topicAt = useRef(0);
+  const retryAt = useRef(0); // after a failed or unusable letter, wait before asking the model again
 
   useEffect(() => { save(s); }, [s]);
   useEffect(() => { const t = setInterval(() => { setNow(Date.now()); setS((x) => tick(x)); }, 1000); return () => clearInterval(t); }, []);
@@ -56,23 +57,25 @@ export default function Desk({ deps, dev, incoming, onIncomingUsed }) {
   useEffect(() => {
     if (!incoming) return;
     const r = tapMailbox(s, { text: incoming, title: 'Your letter', kind: checkRedFlags(incoming).level ? 'scam' : 'real', source: 'yours' }, Date.now(), true);
-    if (r.event.type === 'letter') { setS(r.state); setSel(r.event.cell); say('Your letter is on the desk. It stays on this computer. Tap it twice to open.'); }
+    if (r.event.type === 'letter') { setS(r.state); setSel(r.event.cell); say('Your letter is on the desk. It stays on this computer and never goes to a cloud request. Tap it twice to open.'); }
+    else say('The desk is full. Make room, then use "Practice with this letter" again.');
     onIncomingUsed?.();
   }, [incoming]);
 
   // The on-device model writes fresh practice letters in the background.
   useEffect(() => {
     const w = deps?.device?.writeLetter;
-    if (!w || writing.current || written.length >= 1) return;
+    if (!w || writing.current || written.length >= 1 || Date.now() < retryAt.current) return;
     writing.current = true;
     const t = WRITE_TOPICS[topicAt.current++ % WRITE_TOPICS.length];
     w(t.kind, t.topic)
       .then((d) => {
         const text = String(d?.text || '').trim();
         const r = readLetter(text);
-        if (text.length > 40 && (r.flags.length || r.details.length || r.due)) setWritten((x) => [...x, { text, title: String(d.title || 'New letter').replace(/^\s*(scam|fake|real|legit(imate)?|normal|honest)\b\s*[-:–—]?\s*/i, '').slice(0, 40) || 'New letter', kind: t.kind, source: 'device' }]);
+        if (!(text.length > 40 && (r.flags.length || r.details.length || r.due))) { retryAt.current = Date.now() + 30000; return; }
+        setWritten((x) => [...x, { text, title: String(d.title || 'New letter').replace(/^\s*(scam|fake|real|legit(imate)?|normal|honest)\b\s*[-:–—]?\s*/i, '').slice(0, 40) || 'New letter', kind: t.kind, source: 'device' }]);
       })
-      .catch(() => {})
+      .catch(() => { retryAt.current = Date.now() + 60000; })
       .finally(() => { writing.current = false; setNow(Date.now()); });
   }, [deps, written.length, now]);
 
@@ -85,7 +88,7 @@ export default function Desk({ deps, dev, incoming, onIncomingUsed }) {
     if (e.type === 'merge') { setFlash(e.cell); say(`Merged: ${tileName(e.tile)}`); levelMsg(e.levelUp); }
     if (e.type === 'no-stamps') say('Out of stamps. A new one arrives every few seconds.');
     if (e.type === 'board-full') say('The desk is full. Merge or hand in some clues first.');
-    if (e.type === 'locked') { setFlash(e.cell); say('Locked on your device. Locked details can go to the cloud; exposed ones never do.'); levelMsg(e.levelUp); }
+    if (e.type === 'locked') { setFlash(e.cell); say('Locked on your device. While any detail is exposed, nothing goes to the cloud.'); levelMsg(e.levelUp); }
     return e;
   }
 
@@ -150,7 +153,13 @@ export default function Desk({ deps, dev, incoming, onIncomingUsed }) {
   async function onDeliver(o) {
     const r = deliver(s, o.id);
     const e = r.event;
-    if (e.type !== 'delivered') { say('Not ready yet: you need every tile shown on the card.'); return; }
+    if (e.type !== 'delivered') {
+      const why = canDeliver(s, o).why;
+      say(why === 'exposed' ? 'Lock every exposed detail 🪪 on the desk first. Nothing goes to the cloud while a detail is exposed.'
+        : why === 'no-letter' ? 'Open a practice letter first: that is what the expert will look at.'
+          : 'Not ready yet: you need every tile shown on the card.');
+      return;
+    }
     setS(r.state);
     say(`${person(o.who).name} says thank you! +${e.reward.coins} coins`);
     levelMsg(e.levelUp);
@@ -205,7 +214,7 @@ export default function Desk({ deps, dev, incoming, onIncomingUsed }) {
       <div className="board" style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)` }} onPointerMove={pMove}>
         {s.board.map((t, i) => (
           <div key={i} data-cell={i} className={'cell' + (sel === i ? ' sel' : '') + (flash === i ? ' pop' : '') + (drag?.from === i ? ' lifted' : '') + (t?.c === 'exposed' ? ' warn' : '')}
-            onPointerDown={(e) => pDown(e, i)} onPointerUp={pUp} role="button" aria-label={t ? (t.c === 'mailbox' ? 'Mailbox' : tileName(t)) : 'Empty'}>
+            onPointerDown={(e) => pDown(e, i)} onPointerUp={pUp} onPointerCancel={() => { down.current = null; setDrag(null); }} role="button" aria-label={t ? (t.c === 'mailbox' ? 'Mailbox' : tileName(t)) : 'Empty'}>
             <Tile t={t} />
             {i === MAILBOX && <span className="stamps">{s.stamps}</span>}
           </div>
@@ -237,7 +246,7 @@ export default function Desk({ deps, dev, incoming, onIncomingUsed }) {
               <div className="needs">
                 {o.need.map((n, k) => <span key={k} className={'need' + (s.board.some((t) => t && t.c === n.c && t.n === n.n) ? ' have' : '')}><Tile t={n} small /></span>)}
               </div>
-              <button className="primary sm" disabled={!ready.ok} onClick={() => onDeliver(o)}>{ready.ok ? `Hand in · 🪙${rw.coins}` : `🪙 ${rw.coins}`}</button>
+              <button className="primary sm" disabled={!ready.ok && ready.why !== 'exposed'} onClick={() => onDeliver(o)}>{ready.ok ? `Hand in · 🪙${rw.coins}` : ready.why === 'exposed' ? '🔒 Lock 🪪 first' : `🪙 ${rw.coins}`}</button>
             </div>
           );
         })}
@@ -317,7 +326,7 @@ export default function Desk({ deps, dev, incoming, onIncomingUsed }) {
       </div>
       {toast && <div className="desk-toast" role="status">{toast}</div>}
 
-      <p className="foot">Progress is saved in this browser only. <button className="link" onClick={() => { if (confirm('Start the desk over?')) { const n = newGame(); setS(n); setLetter(null); setExpert(null); setSel(null); } }}>Start over</button></p>
+      <p className="foot">Progress (and any letter you brought over) is saved in this browser only. <button className="link" onClick={() => { if (confirm('Start the desk over?')) { const n = newGame(); setS(n); setLetter(null); setExpert(null); setSel(null); } }}>Start over</button></p>
     </div>
   );
 }

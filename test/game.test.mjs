@@ -173,3 +173,23 @@ test('requests lean on what is on the board, so they stay reachable', () => {
   for (let k = 0; k < 30; k++) { s.orders = []; refillOrders(s, rng); for (const o of s.orders) for (const n of o.need) { total++; if (n.c === 'payment' && n.n >= 2) hits++; } }
   assert.ok(hits / total > 0.35, `payment asked ${hits}/${total}`);
 });
+
+test('a cloud request cannot be handed in while any personal detail is exposed', () => {
+  let s = mailAndOpen(newGame(T0)).state; // a practice letter has been opened
+  s.board[30] = { c: 'privacy', n: 2 }; s.board[31] = { c: 'exposed', n: 1, kind: 'NAME' };
+  s.orders = [{ id: 77, who: 'patel', need: [{ c: 'privacy', n: 2 }], cloud: true, ask: '' }];
+  assert.equal(canDeliver(s, s.orders[0]).why, 'exposed');
+  assert.equal(deliver(s, 77).event.type, 'not-ready');
+  s = lockDetail(s, 31).state;
+  assert.ok(canDeliver(s, s.orders[0]).ok);
+  assert.equal(deliver(s, 77).event.type, 'delivered');
+});
+
+test('cloud requests only appear after the player has locked a detail, and need a practice letter', () => {
+  const s = newGame(T0); s.xp = 40; s.orders = [];
+  const rng = rngFrom(5);
+  for (let k = 0; k < 20; k++) { s.orders = []; refillOrders(s, rng); assert.ok(!s.orders.some((o) => o.cloud)); }
+  const o = { id: 1, who: 'leo', need: [{ c: 'privacy', n: 1 }], cloud: true };
+  s.board[5] = { c: 'privacy', n: 1 };
+  assert.equal(canDeliver(s, o).why, 'no-letter');
+});
