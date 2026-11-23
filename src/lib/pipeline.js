@@ -55,7 +55,7 @@ export async function analyzeLocal(original, deps = {}) {
   if (deps.device?.available) {
     try {
       const found = await deps.device.findPersonal(text);
-      extra = spansFromStrings(text, found);
+      extra = spansFromStrings(text, keepFactsVisible(found, facts));
       result.steps.push({ step: 'find-personal', source: SOURCE.DEVICE, found: extra.length });
     } catch (e) {
       result.steps.push({ step: 'find-personal', source: SOURCE.DEVICE, error: String(e.message || e) });
@@ -89,6 +89,20 @@ export async function analyzeLocal(original, deps = {}) {
 export function mergeRisk(ruleLevel, modelRisk) {
   const level = Math.max(ruleLevel, levelOf(modelRisk));
   return { level, label: LEVELS[level] };
+}
+
+/**
+ * The on-device model sometimes tags a due date or an amount as personal (seen 11-19:
+ * "Please pay by [DATEOFBIRTH_1]"). Deadlines and money are what the expert needs and are not
+ * about the person, so model findings that are exactly a due date or an amount stay visible.
+ * Dates of birth are still caught by the rules (DOB / born / date of birth labels).
+ */
+export function keepFactsVisible(found, facts) {
+  const keep = new Set([
+    ...facts.dates.filter((d) => d.due).map((d) => d.text.trim().toLowerCase()),
+    ...facts.money.map((m) => m.text.trim().toLowerCase()),
+  ]);
+  return (found || []).filter((it) => !keep.has(String(it.text || '').trim().replace(/[.,;]$/, '').toLowerCase()));
 }
 
 /**

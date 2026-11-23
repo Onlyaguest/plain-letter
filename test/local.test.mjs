@@ -140,3 +140,17 @@ test('follow-up question is redacted too', async () => {
   assert.ok(!last.includes('555-0199'));
   assert.ok(r.answer.includes('Maria Lopez'));
 });
+
+test('on-device model cannot hide the due date or the amount from the cloud', async () => {
+  const deps = fakeDeps({ device: true });
+  deps.device.findPersonal = async () => [
+    { text: 'December 5, 2026', kind: 'DATEOFBIRTH' },
+    { text: '$437.60', kind: 'PERSONAL' },
+    { text: 'Riverside General Hospital', kind: 'NAME' },
+  ];
+  const local = await analyzeLocal(S.hospital, deps);
+  assert.ok(local.redaction.text.includes('Please pay by December 5, 2026'), 'deadline stays visible');
+  assert.ok(local.redaction.text.includes('$437.60'), 'amount stays visible');
+  assert.ok(!local.redaction.text.includes('04/12/1951'), 'date of birth is still hidden by the rules');
+  assert.ok(!local.redaction.text.includes('Maria Lopez'));
+});
