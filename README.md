@@ -17,13 +17,28 @@ Plain Letter uses **Firebase AI Logic hybrid inference** as a privacy gate:
 
 One rule decides every request: **original text never leaves the device; only redacted text may.**
 
-**Try it:** https://onlyaguest.github.io/plain-letter/ (desktop Chrome; no sign-up) · **Demo video (2:55):** see the Devpost page
+**Try it:** https://onlyaguest.github.io/plain-letter/ (desktop Chrome; no sign-up; the game is at `#desk`) · **Demo video (2:57):** see the Devpost page
 
 ![Privacy gate: left stays on the device, right is exactly what the cloud may see](docs/privacy-gate.png)
 
 | Quick check by Gemini Nano, on the device | Network off: still works on the device |
 |---|---|
 | ![](docs/quick-check-on-device.png) | ![](docs/offline-on-device.png) |
+
+## Letter Desk: a merge game that trains the habits
+The second tab, **🎮 Letter Desk**, turns the same engine into a small merge game for practice (and for families to play together):
+
+- 📮 The mailbox drops sealed practice letters. Opening one runs the **same on-device rules** as the checker, and every warning sign, deadline, amount and personal detail it finds becomes a tile.
+- Merge two identical clues to level them up (🔗 Link → 🎣 Look-alike link → 🕸️ Phishing kit → 🏅 Busted), across four scam families plus deadlines and money.
+- Family members (Grandma Rose, Uncle Ray, …) ask about their messages: hand in the right clues for coins, or file spare clues away.
+- 🪪 **Exposed personal details** must be tapped to **lock** them on the device. Only locked 🔒 tiles can go to a ☁ cloud request, which gets a real expert note from Gemini on the **redacted** letter only (and appears in *What left my computer*). The privacy rule of the app is the core rule of the game.
+- **Gemini Nano writes fresh practice letters on the device** (`ONLY_ON_DEVICE`): free, offline and endless. Without a local model the game uses a built-in deck of 12 letters.
+- Coins fix up a neighborhood help desk: eight upgrades, each a helper (more stamps, a magnifier that finds clues one step higher, a shredder that locks details automatically, …). Levels unlock harder letters and requests.
+- A real letter from the checker can be brought over with *Practice with this letter*; it stays on the device and never goes to a cloud request.
+
+| Desktop | Phone |
+|---|---|
+| ![Letter Desk with a letter written by Gemini Nano](docs/letter-desk.png) | ![Letter Desk on a phone](docs/letter-desk-phone.png) |
 
 ## What it does
 1. **Paste a letter or upload a photo.** Text recognition runs in the browser (tesseract.js); the image is never uploaded.
@@ -41,7 +56,7 @@ Node.js 20+.
 npm install
 cp .env.example .env.local   # fill in your Firebase web app config + reCAPTCHA Enterprise key
 npm run dev
-npm test                     # unit tests for redaction, scam rules, facts and the router
+npm test                     # unit tests: redaction, scam rules, facts, the router and the Letter Desk engine
 npm run build                # static site in dist/
 ```
 
@@ -61,10 +76,11 @@ Without Firebase config the app starts in a clearly labelled **demo mode**: rule
 - **With Chrome's built-in model** (header: *On-device AI ready*; or click *Download*, about 4 GB, needs Chrome's [hardware requirements](https://developer.chrome.com/docs/ai/get-started)): finding personal details and the quick check run on the device; *Ask the cloud expert* sends only the right-hand side.
 - With the local model ready, turn the network off after the page has loaded: rules and Gemini Nano still answer.
 - *What left my computer* shows every cloud request exactly as sent.
+- **Letter Desk** (second tab): tap the 📮 mailbox, tap the letter twice to open it, drag twins together, press *Hand in* on a request. Progress is saved in the browser; *Start over* at the bottom resets it.
 - Cloud calls are protected by App Check (reCAPTCHA Enterprise). Automated or headless browsers may fail App Check; then the AI steps say *not available* and the on-device rules still run.
 
 ## Built during the hackathon
-The repository was created on Nov 17, 2026, inside the Submission Period. Everything here was built for this hackathon: the privacy gate (rule redaction, on-device model redaction, leak check, restore), the Firebase AI Logic routing with one model per task, App Check, the English UI and samples, the tests and the demo. It adapts a few ideas from my earlier Chinese-language scam-text explainer (warning-sign rules, photo text recognition, checking the model's numbers against the letter). Code was written with an AI coding assistant (Claude Code), which the rules allow.
+The repository was created on Nov 17, 2026, inside the Submission Period. Everything here was built for this hackathon: the privacy gate (rule redaction, on-device model redaction, leak check, restore), the Firebase AI Logic routing with one model per task, App Check, the English UI and samples, the Letter Desk game, the tests and the demo. The game's mechanics (generator, merge chains, requests, a room to fix up) are the common merge-game genre; its code, art (emoji) and content are original. It adapts a few ideas from my earlier Chinese-language scam-text explainer (warning-sign rules, photo text recognition, checking the model's numbers against the letter). Code was written with an AI coding assistant (Claude Code), which the rules allow.
 
 ## Code map
 - `src/lib/pipeline.js`: the privacy-aware router (where each prompt runs) and the leak check flow
@@ -73,6 +89,7 @@ The repository was created on Nov 17, 2026, inside the Submission Period. Everyt
 - `src/lib/redflags.js`: scam warning signs and official places to check
 - `src/lib/facts.js`: dates, deadlines, money, and the fact gate for model answers
 - `src/lib/prompts.js`: prompts and JSON schemas (shared by device and cloud)
+- `src/game/engine.js`: Letter Desk rules as pure functions (merge, requests, lock, help desk, stamps); `src/game/Desk.jsx` the board; `src/game/deck.js` the practice letters
 
 ## Open-source libraries
 React (MIT), Vite (MIT), Firebase JS SDK (Apache-2.0), tesseract.js (Apache-2.0) with the English tessdata model (Apache-2.0).
