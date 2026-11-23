@@ -70,7 +70,7 @@ export default function Desk({ deps, dev, incoming, onIncomingUsed }) {
       .then((d) => {
         const text = String(d?.text || '').trim();
         const r = readLetter(text);
-        if (text.length > 40 && (r.flags.length || r.details.length || r.due)) setWritten((x) => [...x, { text, title: String(d.title || 'New letter').slice(0, 40), kind: t.kind, source: 'device' }]);
+        if (text.length > 40 && (r.flags.length || r.details.length || r.due)) setWritten((x) => [...x, { text, title: String(d.title || 'New letter').replace(/^\s*(scam|fake|real|legit(imate)?|normal|honest)\b\s*[-:–—]?\s*/i, '').slice(0, 40) || 'New letter', kind: t.kind, source: 'device' }]);
       })
       .catch(() => {})
       .finally(() => { writing.current = false; setNow(Date.now()); });

@@ -85,3 +85,5 @@
   .c-privacy { background: #1f4a39; } .c-date { background: #1d4549; } .c-money { background: #3b4a21; } .c-letter { background: #4a4230; }
   .c-exposed { background: #6a3a16; outline-color: #f6a66a; } .tile.mailbox { background: #5a3428; }
 }
+.desk pre { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; }
+.desk .card { min-width: 0; overflow-wrap: anywhere; }
