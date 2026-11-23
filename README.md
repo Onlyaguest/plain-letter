@@ -17,7 +17,7 @@ Plain Letter uses **Firebase AI Logic hybrid inference** as a privacy gate:
 
 One rule decides every request: **original text never leaves the device; only redacted text may.**
 
-**Try it:** https://onlyaguest.github.io/plain-letter/ (desktop Chrome; no sign-up; the game is at `#desk`) · **Demo video (2:57):** see the Devpost page
+**Try it:** https://onlyaguest.github.io/plain-letter/ (desktop Chrome; no sign-up; the game is at `#desk`) · **Demo video (2:55):** see the Devpost page
 
 ![Privacy gate: left stays on the device, right is exactly what the cloud may see](docs/privacy-gate.png)
 
