@@ -5,6 +5,7 @@
 //   hybridQuick   PREFER_ON_DEVICE  quick verdict on the REDACTED letter (no local model -> cloud)
 //   explain       PREFER_IN_CLOUD   deep explanation of the REDACTED letter (offline -> device)
 //   followUp      PREFER_ON_DEVICE  follow-up questions about the REDACTED letter
+//   writer        ONLY_ON_DEVICE    Letter Desk: writes fictional practice letters (no user data)
 //
 // The response tells us where it actually ran (response.inferenceSource), and the UI shows it.
 
@@ -114,6 +115,8 @@ export function createAI({ deviceReady }) {
     onDeviceParams: device(P.EXPLAIN_SCHEMA),
     inCloudParams: cloud(P.EXPLAIN_SCHEMA, P.EXPLAIN_SYSTEM),
   });
+  // Letter Desk: practice letters are written on the device only (free, offline, endless).
+  const writerModel = getGenerativeModel(ai, { mode: InferenceMode.ONLY_ON_DEVICE, onDeviceParams: device(P.WRITE_SCHEMA) });
   const followModel = getGenerativeModel(ai, {
     mode: InferenceMode.PREFER_ON_DEVICE,
     onDeviceParams: device(P.FOLLOW_SCHEMA),
@@ -132,6 +135,7 @@ export function createAI({ deviceReady }) {
           available: true,
           findPersonal: async (text) => (await run(findModel, P.findPrompt(text))).data.items || [],
           quick: async (text) => (await run(deviceQuickModel, P.quickPrompt(text, false))).data,
+          writeLetter: async (kind, topic) => (await run(writerModel, P.writePrompt(kind, topic))).data,
         }
       : null,
     hybrid: {

@@ -112,3 +112,17 @@ ${letter}
 
 Question: ${question}`;
 }
+
+// Letter Desk: the on-device model writes fresh practice letters (fictional people only).
+export const WRITE_SCHEMA = {
+  type: 'object',
+  properties: { title: STR, text: STR },
+  required: ['title', 'text'],
+};
+
+export function writePrompt(kind, topic) {
+  return `Write one short practice message for a scam-awareness game for older adults: ${topic}.
+${kind === 'scam' ? 'It is a SCAM, so include the warning signs a real scam would have (a look-alike link, pressure to act fast, an odd way to pay, a threat, or a request for a code), but no real company website.' : 'It is a NORMAL, honest message with no tricks.'}
+Use a made-up US person's full name and made-up numbers. 40 to 90 words. Plain text, no markdown.
+title: 2 to 4 words naming the message type.`;
+}

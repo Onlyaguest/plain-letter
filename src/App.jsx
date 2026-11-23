@@ -4,6 +4,7 @@ import { createAI, deviceStatus, downloadDeviceModel, CLOUD_MODEL } from './lib/
 import { createDemoAI } from './lib/demo.js';
 import { recognize } from './lib/ocr.js';
 import { SAMPLES } from './samples.js';
+import Desk from './game/Desk.jsx';
 
 const RISK_TEXT = {
   none: { title: 'No warning signs found', cls: 'ok' },
@@ -56,6 +57,9 @@ export default function App() {
   const [err, setErr] = useState('');
   const [ledgerOpen, setLedgerOpen] = useState(false);
   const fileRef = useRef(null);
+  const [tab, setTab] = useState(() => (location.hash === '#desk' ? 'desk' : 'check'));
+  const [toDesk, setToDesk] = useState(null);
+  useEffect(() => { history.replaceState(null, '', tab === 'desk' ? '#desk' : location.pathname + location.search); }, [tab]);
 
   useEffect(() => { document.documentElement.classList.toggle('big', big); }, [big]);
   useEffect(() => { deviceStatus().then(setDev); }, []);
@@ -175,6 +179,14 @@ export default function App() {
         <div className="demo">Demo mode: Firebase is not configured here, so AI answers are pre-written samples. Rules, redaction and the privacy gate are real.</div>
       )}
 
+      <nav className="tabs" role="tablist">
+        <button role="tab" aria-selected={tab === 'check'} onClick={() => setTab('check')}>Check a letter</button>
+        <button role="tab" aria-selected={tab === 'desk'} onClick={() => setTab('desk')}>🎮 Letter Desk</button>
+      </nav>
+
+      {tab === 'desk' ? (
+        <Desk deps={deps} dev={dev} incoming={toDesk} onIncomingUsed={() => setToDesk(null)} />
+      ) : (<>
       <section className="input card">
         <label htmlFor="t" className="h">Paste a letter, bill or text message</label>
         <textarea id="t" value={text} onChange={(e) => setText(e.target.value)} rows={big ? 7 : 8}
@@ -287,6 +299,7 @@ export default function App() {
 
           <div className="row end">
             <button className="ghost" onClick={shareText}>Copy for family</button>
+            <button className="ghost" onClick={() => { setToDesk(local.original); setTab('desk'); }}>🎮 Practice with this letter</button>
             <button className="ghost" onClick={() => setLedgerOpen(!ledgerOpen)}>What left my computer ({ledger.length})</button>
           </div>
           {ledgerOpen && (
@@ -300,6 +313,8 @@ export default function App() {
           )}
         </div>
       )}
+
+      </>)}
 
       <footer className="foot">
         Plain Letter explains; it does not give legal, medical or financial advice. When in doubt, call the official number you find yourself.
