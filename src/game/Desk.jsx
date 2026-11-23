@@ -72,7 +72,8 @@ export default function Desk({ deps, dev, incoming, onIncomingUsed }) {
       .then((d) => {
         const text = String(d?.text || '').trim();
         const r = readLetter(text);
-        if (!(text.length > 40 && (r.flags.length || r.details.length || r.due))) { retryAt.current = Date.now() + 30000; return; }
+        // A practice scam must show at least one warning sign the rules can find; a real letter needs a fact or a detail.
+        if (!(text.length > 40 && (t.kind === 'scam' ? r.flags.length : (r.details.length || r.due || r.money)))) { retryAt.current = Date.now() + 30000; return; }
         setWritten((x) => [...x, { text, title: String(d.title || 'New letter').replace(/^\s*(scam|fake|real|legit(imate)?|normal|honest)\b\s*[-:–—]?\s*/i, '').slice(0, 40) || 'New letter', kind: t.kind, source: 'device' }]);
       })
       .catch(() => { retryAt.current = Date.now() + 60000; })
