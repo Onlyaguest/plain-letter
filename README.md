@@ -56,9 +56,10 @@ Without Firebase config the app starts in a clearly labelled **demo mode**: rule
 
 ## Testing it (for judges)
 - Open the live demo in **desktop Chrome** and click a sample (*Hospital bill*, *Unpaid toll text*, *"IRS" phone message*, *Medicare notice*). No account needed.
+- **Expected result on a typical Chrome** (no local model): a risk banner and rule-based warning signs at once, a quick check in a few seconds marked *Cloud · saw redacted text only*, and the privacy gate with your letter next to the redacted text. Downloading the local model is optional.
 - **Without Chrome's built-in model** (the header says *can be downloaded*): the quick check uses `PREFER_ON_DEVICE` and falls back to Gemini in the cloud, on the redacted text only. The badge on each answer says where it ran.
 - **With Chrome's built-in model** (header: *On-device AI ready*; or click *Download*, about 4 GB, needs Chrome's [hardware requirements](https://developer.chrome.com/docs/ai/get-started)): finding personal details and the quick check run on the device; *Ask the cloud expert* sends only the right-hand side.
-- Turn the network off after the page has loaded: rules and Gemini Nano still answer.
+- With the local model ready, turn the network off after the page has loaded: rules and Gemini Nano still answer.
 - *What left my computer* shows every cloud request exactly as sent.
 - Cloud calls are protected by App Check (reCAPTCHA Enterprise). Automated or headless browsers may fail App Check; then the AI steps say *not available* and the on-device rules still run.
 
